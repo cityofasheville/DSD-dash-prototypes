@@ -2396,3 +2396,11 @@ const permits = [
     "R1_FEE_CODE": "SIGN_FACE"
   }
 ]
+
+const combinedData = permits.map(p => {
+    const returnVal = JSON.parse(JSON.stringify(p));
+    const volDatum = volByAlias.find(v => v.Alias === p.R1_APP_TYPE_ALIAS);
+    returnVal.vol2017 = volDatum ? volDatum["2017_volume"] : 0;
+    // also add type of reviews?
+    return returnVal;
+})

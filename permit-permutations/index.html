@@ -66,15 +66,6 @@
 
   document.addEventListener("DOMContentLoaded", function() {
 
-  // match Alias field from volByAlias to R1_APP_TYPE_ALIAS in permits
-  const combinedData = permits.map(p => {
-    const returnVal = JSON.parse(JSON.stringify(p));
-    const volDatum = volByAlias.find(v => v.Alias === p.R1_APP_TYPE_ALIAS);
-    returnVal.vol2017 = volDatum ? volDatum["2017_volume"] : 0;
-    // also add type of reviews?
-    return returnVal;
-  })
-
   const volumeDomain = [d3.min(combinedData, d => d.vol2017), d3.max(combinedData, d => d.vol2017)]
 
   let inAccelaOrder = d3.nest()
@@ -83,7 +74,7 @@
     .key(function(d) { return d.R1_PER_SUB_TYPE; })
     .key(function(d) { return d.R1_PER_CATEGORY; })
     // .key(function(d) { return d.R1_APP_TYPE_ALIAS; })
-    .rollup(function(d) { console.log(d); return d[0].vol2017; })
+    .rollup(function(d) { return d; })
     .entries(combinedData);
 
   const allPermits = {key: 'root', 'values': inAccelaOrder}
@@ -205,8 +196,9 @@
       .attr("transform", "translate(" + circlePackWidth / 2 + "," + diameter / 2 + ")");
 
     const color = d3.scaleLinear()
-      .domain(volumeDomain)
-      .range(["#e9f2fb", "tomato"])
+      // .domain(volumeDomain)
+      .domain([-2, 4])
+      .range(["tomato", "#e9f2fb"])
       .interpolate(d3.interpolateHcl);
 
     const pack = d3.pack()
@@ -225,7 +217,7 @@
       .data(nodes)
       .enter().append("circle")
         .attr("class", function(d) { return d.parent ? d.children ? "node" : "node node--leaf" : "node node--root"; })
-        .style("fill", function(d) { console.log(d); return d.children ? color(d.depth) : null; })
+        .style("fill", function(d) { return d.children ? color(d.depth) : color(4); })
         .style('stroke', '#5297e0')
         .style('stroke-width', '0.2px')
         .on("click", function(d) { if (focus !== d) zoom(d), d3.event.stopPropagation(); });
@@ -277,7 +269,7 @@
     <div id="all-permits">
       <h1>All Records, Accela Breakdown</h1>
     </div>
-<!--     <div id="permitting">
+    <div id="permitting">
       <h1>Vertical</h1>
     </div>
     <div id="planning">
@@ -300,7 +292,7 @@
     </div>
     <div id="backwards">
       <h1>All, Backwards</h1>
-    </div> -->
+    </div>
   </div>
 </body>
 </html>
