@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script type="text/javascript" src="./permits.js"></script>
+  <style type="text/css">
+    html, body {
+      height: 100vh;
+      width: 100vw;
+      font-family: 'Alegreya Sans', sans-serif;
+      margin: 0;
+      overflow: scroll;
+      padding: 0;
+    }
+    .vis {
+      width: 100%;
+      height: 75vh;
+    }
+    .circlepacks div {
+      display: inline-block;
+      width: 33%;
+      height: 100%;
+      margin: 0;
+      padding: 0 0 5% 0;
+    }
+    .circlepacks h1 {
+      text-align: center;
+      color: tomato;
+      font-size: 1.75rem;
+      padding: 0 5%;
+      font-weight: lighter;
+    }
+    #backwards h1 {
+      -webkit-transform:rotateY(180deg);
+      -moz-transform:rotateY(180deg);
+      -o-transform:rotateY(180deg);
+      -ms-transform:rotateY(180deg);
+    }
+    .node {
+      cursor: pointer;
+    }
+
+    circle.node:hover {
+      stroke: black !important;
+      stroke-width: 1.5px !important;
+    }
+
+    .node--leaf {
+      fill: white;
+    }
+
+    .label {
+      font-size: 0.75em;
+      text-anchor: middle;
+      text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff, 0 -1px 0 #fff;
+    }
+
+    .label,
+    .node--leaf {
+      pointer-events: none;
+    }
+  </style>
+</head>
+  <script type="text/javascript">
+
+  document.addEventListener("DOMContentLoaded", function() {
+
+  let inAccelaOrder = d3.nest()
+    .key(function(d) { return d.R1_MODULE_NAME; })
+    .key(function(d) { return d.R1_PER_TYPE; })
+    .key(function(d) { return d.R1_PER_SUB_TYPE; })
+    .key(function(d) { return d.R1_PER_CATEGORY; })
+    // .key(function(d) { return d.R1_APP_TYPE_ALIAS; })
+    .rollup(function(d) { return d; })
+    .entries(permits);
+
+  const allPermits = {key: 'root', 'values': inAccelaOrder}
+
+  const verticalPermits = inAccelaOrder[0]
+
+  const horizontalPermits = d3.nest()
+    .key(function(d) { return d.R1_MODULE_NAME; })
+    .key(function(d) { return d.R1_PER_TYPE; })
+    .key(function(d) { return d.R1_PER_SUB_TYPE; })
+    // .key(function(d) { return d.R1_PER_CATEGORY; })
+    // NOTE: NO PLANNING RECORDS HAVE R1_PER_CATEGORY, some vertical also don't
+    .rollup(function(d) { return d; })
+    .entries(permits)[1]
+
+  const byProcessCode = {
+    key: 'root',
+    values: d3.nest()
+      .key(function(d) { return d.R1_PROCESS_CODE; })
+      .key(function(d) { return d.R1_MODULE_NAME; })
+      .key(function(d) { return d.R1_PER_TYPE; })
+      .key(function(d) { return d.R1_PER_SUB_TYPE; })
+      .key(function(d) { return d.R1_PER_CATEGORY; })
+      .rollup(function(d) { return d; })
+      .entries(permits),
+  }
+
+  const byFeeCode = {
+    key: 'root',
+    values: d3.nest()
+      .key(function(d) { return d.R1_FEE_CODE; })
+      .key(function(d) { return d.R1_MODULE_NAME; })
+      .key(function(d) { return d.R1_PER_TYPE; })
+      .key(function(d) { return d.R1_PER_SUB_TYPE; })
+      .key(function(d) { return d.R1_PER_CATEGORY; })
+      .rollup(function(d) { return d; })
+      .entries(permits),
+  }
+
+  const feeAndProcess = {
+    key: 'root',
+    values: d3.nest()
+      .key(function(d) { return d.R1_FEE_CODE; })
+      .key(function(d) { return d.R1_PROCESS_CODE; })
+      // .key(function(d) { return d.R1_MODULE_NAME; })
+      // .key(function(d) { return d.R1_PER_TYPE; })
+      // .key(function(d) { return d.R1_PER_SUB_TYPE; })
+      // .key(function(d) { return d.R1_PER_CATEGORY; })
+      .rollup(function(d) { return d; })
+      .entries(permits),
+  }
+
+  const processAndModule = {
+    key: 'root',
+    values: d3.nest()
+      // .key(function(d) { return d.R1_FEE_CODE; })
+      .key(function(d) { return d.R1_PROCESS_CODE; })
+      .key(function(d) { return d.R1_MODULE_NAME; })
+      // .key(function(d) { return d.R1_PER_TYPE; })
+      // .key(function(d) { return d.R1_PER_SUB_TYPE; })
+      // .key(function(d) { return d.R1_PER_CATEGORY; })
+      .rollup(function(d) { return d; })
+      .entries(permits),
+  }
+
+
+  const feeAndModule = {
+    key: 'root',
+    values: d3.nest()
+      .key(function(d) { return d.R1_FEE_CODE; })
+      // .key(function(d) { return d.R1_PROCESS_CODE; })
+      .key(function(d) { return d.R1_MODULE_NAME; })
+      // .key(function(d) { return d.R1_PER_TYPE; })
+      // .key(function(d) { return d.R1_PER_SUB_TYPE; })
+      // .key(function(d) { return d.R1_PER_CATEGORY; })
+      .rollup(function(d) { return d; })
+      .entries(permits),
+  }
+
+  const backwards = {
+    key: 'root',
+    values: d3.nest()
+      .key(function(d) { return d.R1_PER_CATEGORY; })
+      .key(function(d) { return d.R1_PER_SUB_TYPE; })
+      .key(function(d) { return d.R1_PER_TYPE; })
+      .key(function(d) { return d.R1_MODULE_NAME; })
+      .rollup(function(d) { return d; })
+      .entries(permits),
+  }
+
+
+  render(allPermits, d3.select('#all-permits'))
+  render(verticalPermits, d3.select('#permitting'))
+  render(horizontalPermits, d3.select('#planning'))
+
+  render(byProcessCode, d3.select('#process-code'))
+  render(byFeeCode, d3.select('#fee-code'))
+  render(feeAndProcess, d3.select('#fee-and-process'))
+
+  render(processAndModule, d3.select('#process-module'))
+  render(feeAndModule, d3.select('#fee-module'))
+  render(backwards, d3.select('#backwards'))
+
+
+  function render(nestedData, parentSelection) {
+    // zoomable circle pack
+    const circlePackWidth = parentSelection.style('width').replace('px', '');
+    const circlePackHeight = parentSelection.style('height').replace('px', '');
+
+    const svgDimension =  Math.min(circlePackWidth, circlePackHeight)
+
+    const svg = parentSelection.append('svg')
+      .attr('width', circlePackWidth)
+      .attr('height', svgDimension)
+
+    const margin = 5
+    const diameter = svgDimension
+    const g = svg.append("g")
+      .attr("transform", "translate(" + circlePackWidth / 2 + "," + diameter / 2 + ")");
+
+    const color = d3.scaleLinear()
+      .domain([-1, 3])
+      .range(["#5297e0", "#e9f2fb"])
+      .interpolate(d3.interpolateHcl);
+
+    const pack = d3.pack()
+      .size([diameter - margin, diameter - margin])
+      .padding(2)
+
+    const root = d3.hierarchy(nestedData, d => d.values)
+      .sum(function(d) { return 1 })
+      .sort(function(a, b) { return b.value - a.value; });
+
+    var focus = root;
+    const nodes = pack(root).descendants()
+    let view;
+
+    var circle = g.selectAll("circle")
+      .data(nodes)
+      .enter().append("circle")
+        .attr("class", function(d) { return d.parent ? d.children ? "node" : "node node--leaf" : "node node--root"; })
+        .style("fill", function(d) { return d.children ? color(d.depth) : null; })
+        .style('stroke', '#5297e0')
+        .style('stroke-width', '0.2px')
+        .on("click", function(d) { if (focus !== d) zoom(d), d3.event.stopPropagation(); });
+
+    var text = g.selectAll("text")
+      .data(nodes)
+      .enter().append("text")
+        .attr("class", "label")
+        .style("fill-opacity", 0)
+        .style("display", function(d) { return d.parent === root ? "inline" : "none"; })
+        .text(function(d) { return d.data.key; });
+
+    var node = g.selectAll("circle,text");
+
+    svg.on("click", function() { zoom(root); });
+
+    zoomTo([root.x, root.y, root.r * 2 + margin]);
+
+    function zoom(d) {
+      var focus0 = focus; focus = d;
+
+      var transition = d3.transition()
+          .duration(d3.event.altKey ? 7500 : 750)
+          .tween("zoom", function(d) {
+            var i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2 + margin]);
+            return function(t) { zoomTo(i(t)); };
+          });
+
+      transition.selectAll("text")
+        .filter(function(d) { return d.parent === focus || this.style.display === "inline"; })
+          .style("fill-opacity", function(d) { return d.parent === focus ? 1 : 0; })
+          .on("start", function(d) { if (d.parent === focus) this.style.display = "inline"; })
+          .on("end", function(d) { if (d.parent !== focus) this.style.display = "none"; });
+
+    };
+
+    function zoomTo(v) {
+      var k = diameter / v[2]; view = v;
+      node.attr("transform", function(d) { return "translate(" + (d.x - v[0]) * k + "," + (d.y - v[1]) * k + ")"; });
+      circle.attr("r", function(d) { return d.r * k; });
+    }
+
+  }
+
+  });
+  </script>
+<body>
+  <div class="vis circlepacks">
+    <div id="all-permits">
+      <h1>All Records, Accela Breakdown</h1>
+    </div>
+    <div id="permitting">
+      <h1>Vertical</h1>
+    </div>
+    <div id="planning">
+      <h1>Horizontal</h1>
+    </div>
+    <div id="process-code">
+      <h1>All by Process Code</h1>
+    </div>
+    <div id="fee-code">
+      <h1>All by Fee Code</h1>
+    </div>
+    <div id="fee-and-process">
+      <h1>By Fee, Then Process</h1>
+    </div>
+    <div id="process-module">
+      <h1>By Process, Then Module</h1>
+    </div>
+    <div id="fee-module">
+      <h1>By Fee, Then Module</h1>
+    </div>
+    <div id="backwards">
+      <h1>All, Backwards</h1>
+    </div>
+  </div>
+</body>
+</html>
