@@ -19,6 +19,7 @@
     .parent {
       width: 100%;
       height: 100%;
+      text-align: center;
     }
     .background-graphics {
       opacity: 0.25;
@@ -29,6 +30,8 @@
   <script type="text/babel">
   const xAccessor = (stringDate) => {
     const arrDate = stringDate.split('/');
+    if (arrDate.length < 2) { return null; }
+    arrDate[2].length < 4 ? arrDate[2] = `20${arrDate[2]}` : null
     return new Date(arrDate[2], arrDate[0], arrDate[1]);
   }
 
@@ -42,6 +45,11 @@
       color: 'orange'
     },
     {
+      name: 'Initial Meeting Date',
+      color: 'orange'
+      //  IS THIS RIGHT???????
+    },
+    {
       name: 'Revision Meeting Date',
       color: 'green'
     },
@@ -51,13 +59,15 @@
     }
   ]
 
-  const allData = trcData['2018'].map(e => {
+  const allData = trcData['2017'].concat(trcData['2018']).map(e => {
     e.coordinates =[]
     dateTypes.forEach(type => {
       if (e[type.name]) {
+        const date = xAccessor(e[type.name])
+        if (!date) { return; }
         e.coordinates.push(
           {
-            date: xAccessor(e[type.name]),
+            date,
             color: type.color,
             eventType: type.name,
           }
@@ -65,7 +75,7 @@
       }
     })
     return e;
-  })
+  }).filter(d => d.coordinates.length > 0)
 
   assignLayersToEvents(allData)
 
@@ -113,7 +123,7 @@
   container.className += 'parent'
 
   ReactDOM.render(
-    <div style={{ width: '100%', height: '100%', textAlign: 'center' }}>
+    <div style={{ width: '90%', height: '90%', textAlign: 'center' }}>
       <Semiotic.ResponsiveXYFrame
         responsiveWidth
         responsiveHeight
@@ -137,7 +147,7 @@
         showLinePoints
         customPointMark={(d) => {
           return <circle
-            r={7}
+            r={8}
           />
         }}
         pointStyle={d => ({
