@@ -1,3 +1,6 @@
+// replace everything that isn't a number for a _value field with ''
+// transform the month & year field into a datetime
+
 const permitVol = [
   {
     "Month & Year": "January 2008",

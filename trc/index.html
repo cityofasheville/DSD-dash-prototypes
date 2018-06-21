@@ -2,55 +2,156 @@
 <html>
 <head>
   <title></title>
-  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/semiotic@1.11.12/dist/semiotic.min.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
   <script type="text/javascript" src="./data.js"></script>
   <style type="text/css">
     html, body {
-      height: 100vh;
-      width: 100vw;
+      height: 100%;
+      width: 100%;
       font-family: 'Alegreya Sans', sans-serif;
       margin: 0;
-      overflow: scroll;
+      overflow: none;
       padding: 0;
     }
-    .vis {
+    .parent {
       width: 100%;
-      height: 75vh;
-    }
-    .circlepacks div {
-      display: inline-block;
-      width: 33%;
       height: 100%;
-      margin: 0;
-      padding: 0 0 5% 0;
     }
-    .circlepacks h1 {
-      text-align: center;
-      color: tomato;
-      font-size: 1.75rem;
-      padding: 0 5%;
-      font-weight: lighter;
+    .background-graphics {
+      opacity: 0.25;
     }
   </style>
 </head>
-  <script type="text/javascript">
+<body>
+  <script type="text/babel">
+  const xAccessor = (stringDate) => {
+    const arrDate = stringDate.split('/');
+    return new Date(arrDate[2], arrDate[0], arrDate[1]);
+  }
 
-  document.addEventListener("DOMContentLoaded", function() {
+  const dateTypes = [
+    {
+      name: 'Submission Date',
+      color: 'red'
+    },
+    {
+      name: 'Initial TRC Meeting Date',
+      color: 'orange'
+    },
+    {
+      name: 'Revision Meeting Date',
+      color: 'green'
+    },
+    {
+      name: 'Final Meeting Date',
+      color: 'blue'
+    }
+  ]
 
-  // make timeline of all projects - start and end dates are submission, then whatever one is last of next three if exists
-    // submission - red circle
-    // trc - orangey-yellow circle with orange line from submission
-    // revision - green circle with green line from trc
-    // final - blue circle with blue line from trc
+  const allData = trcData['2018'].map(e => {
+    e.coordinates =[]
+    dateTypes.forEach(type => {
+      if (e[type.name]) {
+        e.coordinates.push(
+          {
+            date: xAccessor(e[type.name]),
+            color: type.color,
+            eventType: type.name,
+          }
+        )
+      }
+    })
+    return e;
+  })
+
+  assignLayersToEvents(allData)
+
+  function assignLayersToEvents(eventList) {
+    eventList.map(function(e, i) {
+      e.layerNum = 0
+      e.numConflicts = overlapIndices(e, i, eventList).length
+      return e
+    })
+
+    eventList.sort((a, b) => a.numConflicts - b.numConflicts)
+    let overlaps = true;
+
+    while (overlaps) {
+      let currentOverlaps = false;
+      eventList.forEach(function (e, eIndex) {
+        const theseOverlaps = overlapIndices(e, eIndex, eventList)
+        if (theseOverlaps.length !== 0) {
+          e.layerNum += 1
+          currentOverlaps = true
+        }
+      })
+      overlaps = currentOverlaps;
+    }
+
+    eventList.forEach(e => {
+      e.coordinates.map(coord => {coord.layerNum = e.layerNum})
+    })
+  }
+
+  function overlapIndices(d, inputIndex, eventList) {
+    return eventList.filter(function(e, eventIndex) {
+      if (eventIndex === inputIndex) {
+        // Return false if you're comparing it to itself
+        return false;
+      }
+      e.index = eventIndex
+      return e.coordinates[0].date < d.coordinates[d.coordinates.length - 1].date && d.coordinates[0].date < e.coordinates[e.coordinates.length - 1].date && d.layerNum === e.layerNum
+    }).map((e) => e.index)
+  }
 
   // hover for tooltip showing project name and street address
-
   // click for rest of details in a modal
+  const container = document.body.appendChild(document.createElement('div'));
+  container.className += 'parent'
 
-  });
+  ReactDOM.render(
+    <div style={{ width: '100%', height: '100%', textAlign: 'center' }}>
+      <Semiotic.ResponsiveXYFrame
+        responsiveWidth
+        responsiveHeight
+        margin={{ top: 70, left: 30, right: 30, bottom: 70}}
+        lines={allData}
+        lineType={ 'line' }
+        xAccessor="date"
+        yAccessor="layerNum"
+        axes={[
+          {
+            orient: 'top',
+            rotate: -45,
+            tickFormat: d => `${new Date(d).toLocaleDateString('en-US', {month: "short", year: '2-digit'})}`,
+            ticks: 5,
+          }
+        ]}
+        lineStyle={{
+          stroke: 'black',
+          strokeWidth: '1.5'
+        }}
+        showLinePoints
+        customPointMark={(d) => {
+          return <circle
+            r={7}
+          />
+        }}
+        pointStyle={d => ({
+          stroke: d.color,
+          strokeWidth: 3,
+          fill: 'white',
+        })}
+        hoverAnnotation
+        tooltipContent={d => `${d.parentLine['Project Name']} ${d.eventType}: ${d.date.toLocaleDateString()}`
+        }
+      />
+    </div>,
+    container
+  );
   </script>
-<body>
-  <div class="vis">
-  </div>
 </body>
 </html>

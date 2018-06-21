@@ -323,25 +323,6 @@ const trcData = {
       "Status": "TRC Review",
       "": ""
     },
-    {
-      "Project Name": "",
-      "Record Number": "",
-      "Street Address": "",
-      "Project Type": "",
-      "Project Modifier": "",
-      "Planner": "",
-      "Description": "",
-      "Project Materials": "",
-      "Submission Date": "",
-      "Initial TRC Meeting Date": "",
-      "Revision Meeting Date": "",
-      "Final Meeting Date": "",
-      "Gross Floor Area": "",
-      "Residential Units": "",
-      "Estimated Cost": "",
-      "Status": "",
-      "": "TRC Approved"
-    }
   ],
   2017: [
     {
