@@ -120,7 +120,7 @@
   // THIS IS SILLY FOR NOW BUT WILL MAKE SENSE
   // LATER, MAKE TIMELINES AND SUCH
   const activeTypes = volumeKeys;
-  const activeYears = ['2016', '2017', '2018'];
+  const activeYears = ['2015', '2016', '2017', '2018'];
 
   const currentLines = []
 
@@ -145,7 +145,7 @@
       <Semiotic.ResponsiveXYFrame
         responsiveWidth
         responsiveHeight
-        margin={{ top: 70, left: 30, right: 30, bottom: 70}}
+        margin={{ top: 70, left: 40, right: 40, bottom: 70}}
         lines={currentLines}
         lineType={ 'line' }
         xAccessor="monthInt"
@@ -175,7 +175,7 @@
         })}
         hoverAnnotation
         tooltipContent={d => {
-          return `${d.monthName} ${d.parentLine.year} ${d.parentLine.type}: ${d.volume}`
+          return `${d.parentLine.year} ${d.parentLine.type}: ${d.volume}`
         }
         }
       />
