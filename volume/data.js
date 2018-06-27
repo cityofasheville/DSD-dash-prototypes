@@ -4015,7 +4015,7 @@ const permitVol = [
     "Alter Res Value": ""
   },
   {
-    "Month & Year": "November2017",
+    "Month & Year": "November 2017",
     "Single Family": 18,
     "Multi Family": 0,
     "Town Houses": 0,

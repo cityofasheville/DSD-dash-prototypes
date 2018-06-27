@@ -2,7 +2,16 @@
 <html>
 <head>
   <title></title>
-  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script src="https://d3js.org/d3-array.v1.min.js"></script>
+  <script src="https://d3js.org/d3-collection.v1.min.js"></script>
+  <script src="https://d3js.org/d3-color.v1.min.js"></script>
+  <script src="https://d3js.org/d3-format.v1.min.js"></script>
+  <script src="https://d3js.org/d3-interpolate.v1.min.js"></script>
+  <script src="https://d3js.org/d3-scale.v2.min.js"></script>
+  <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/semiotic@1.11.12/dist/semiotic.min.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
   <script type="text/javascript" src="./data.js"></script>
   <style type="text/css">
     html, body {
@@ -13,15 +22,35 @@
       overflow: hidden;
       padding: 0;
     }
-    .vis {
+    .parent {
       width: 100%;
       height: 100vh;
     }
+    .background-graphics {
+      opacity: 0.1;
+      stroke-dasharray: 10;
+    }
   </style>
 </head>
-  <script type="text/javascript">
+<body>
+  <script type="text/babel">
+  // x axis is months
+  // y axis is volume
+  // dot radius is value
+  // color is type
 
+  // chart showing by year for volume to see seasonal trends
+  // x axis is month
+  // y axis is volume
+  // scaled circles to represent dollar amount
+  // shading and color indicate type
 
+  // let people toggle dollar amount showing or not?
+  // let people toggle all years?
+
+  // plot volume and dollar amount together - with calendar selector? stacked boxes?  let people add a month at a time to compare
+  // play button on a brush slider?
+  // toggle button to show brush or month boxes?
   const volumeKeys = [
     'Single Family',
     'Multi Family',
@@ -32,48 +61,126 @@
     'Commercial Alterations and Additions',
     'Mobile Homes',
   ]
-  // add ' Construction Value' to get value
 
-  document.addEventListener("DOMContentLoaded", function() {
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December'
+  ]
 
-    const volByType = {}
+  const volByType = {}
 
-    volumeKeys.forEach(volKey => {
-      volByType[volKey] = {}
-      permitVol.forEach(d => {
-        const splitDate = d['Month & Year'].split(' ')
-        const month = splitDate[0];
-        const year = d['Month & Year'].split(' ')[1]
+  volumeKeys.forEach(volKey => {
+    volByType[volKey] = {}
+    permitVol.forEach(d => {
+      const splitDate = d['Month & Year'].split(' ')
+      const month = splitDate[0];
+      const year = d['Month & Year'].split(' ')[1]
+      let value = d[`${volKey} Construction Value`].replace(/\D/g, '')
+      if (value === "") { value = 0; }
 
-        if (!volByType[volKey][year]) {
-          volByType[volKey][year] = []
-        }
+      if (!volByType[volKey][year]) {
+        volByType[volKey][year] = []
+      }
 
-        volByType[volKey][year][month] = d[volKey];
+      volByType[volKey][year].push({
+        volume: d[volKey],
+        monthName: month,
+        monthInt: months.findIndex(m => m === month),
+        value: value,
       })
     })
+  })
 
-    console.log(volByType)
+  const yearsCovered = Object.keys(volByType[volumeKeys[0]])
 
-    // chart showing by year for volume to see seasonal trends
-    // x axis is month
-    // y axis is volume
-    // scaled circles to represent dollar amount
-    // shading and color indicate type
+  const sortedValues = [].concat.apply(
+    [],
+    [].concat.apply(
+      [],
+      [].concat.apply([], Object.values(volByType)).map(d => Object.values(d))
+    )
+  ).map(d => d.value)
+    .sort((a, b) => a - b)
 
-    // let people toggle dollar amount showing or not?
-    // let people toggle all years?
-
-    // plot volume and dollar amount together - with calendar selector? stacked boxes?  let people add a month at a time to compare
-    // play button on a brush slider?
-    // toggle button to show brush or month boxes?
+  const radiusFunc = d3.scaleLinear()
+    .range([2, 20])
+    .domain([sortedValues[0], +sortedValues[sortedValues.length - 1]])
 
 
+  // THIS IS SILLY FOR NOW BUT WILL MAKE SENSE
+  // LATER, MAKE TIMELINES AND SUCH
+  const activeTypes = volumeKeys;
+  const activeYears = ['2016', '2017', '2018'];
 
-  });
+  const currentLines = []
+
+  activeTypes.forEach(type => {
+    activeYears.forEach(year => {
+      currentLines.push({
+        type,
+        year,
+        coordinates: volByType[type][year],
+      })
+    })
+  })
+
+  const container = document.body.appendChild(document.createElement('div'));
+  container.className += 'parent'
+
+
+  // TODO: COLOR, HOVER BEHAVIOR
+
+  ReactDOM.render(
+    <div style={{ width: '99%', height: '90%', textAlign: 'center' }}>
+      <Semiotic.ResponsiveXYFrame
+        responsiveWidth
+        responsiveHeight
+        margin={{ top: 70, left: 30, right: 30, bottom: 70}}
+        lines={currentLines}
+        lineType={ 'line' }
+        xAccessor="monthInt"
+        yAccessor="volume"
+        axes={[
+          {
+            orient: 'bottom',
+            rotate: -45,
+          }
+        ]}
+        lineStyle={{
+          stroke: 'black',
+          strokeWidth: '1',
+          strokeOpacity: 0.25,
+        }}
+        showLinePoints
+        customPointMark={(d) => {
+          return <circle
+            r={radiusFunc(d.d.value)}
+          />
+        }}
+        pointStyle={d => ({
+          stroke: 'pink',
+          strokeWidth: 1,
+          fill: 'pink',
+        })}
+        hoverAnnotation
+        tooltipContent={d => {
+          return `${d.monthName} ${d.parentLine.year} ${d.parentLine.type}: ${d.volume}`
+        }
+        }
+      />
+    </div>,
+    container
+  );
   </script>
-<body>
-  <div class="vis">
-  </div>
 </body>
 </html>
