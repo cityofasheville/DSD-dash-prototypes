@@ -153,13 +153,14 @@
         axes={[
           {
             orient: 'bottom',
-            rotate: -45,
+            ticks: 12,
+            tickFormat: d => months[d]
           }
         ]}
         lineStyle={{
           stroke: 'black',
-          strokeWidth: '1',
-          strokeOpacity: 0.25,
+          strokeWidth: '0.5',
+          strokeOpacity: 0.35,
         }}
         showLinePoints
         customPointMark={(d) => {
