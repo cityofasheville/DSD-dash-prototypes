@@ -27,159 +27,180 @@
       height: 100vh;
     }
     .background-graphics {
-      opacity: 0.1;
+      opacity: 0.2;
       stroke-dasharray: 10;
     }
   </style>
 </head>
 <body>
   <script type="text/babel">
-  // x axis is months
-  // y axis is volume
-  // dot radius is value
-  // color is type
-
-  // chart showing by year for volume to see seasonal trends
-  // x axis is month
-  // y axis is volume
-  // scaled circles to represent dollar amount
-  // shading and color indicate type
-
-  // let people toggle dollar amount showing or not?
-  // let people toggle all years?
-
-  // plot volume and dollar amount together - with calendar selector? stacked boxes?  let people add a month at a time to compare
+  // let people toggle types, years
   // play button on a brush slider?
-  // toggle button to show brush or month boxes?
-  const volumeKeys = [
-    'Single Family',
-    'Multi Family',
-    'Town Houses',
-    'Duplexes',
-    'Commercial',
-    'Residential Alterations and Additions',
-    'Commercial Alterations and Additions',
-    'Mobile Homes',
-  ]
 
-  const months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December'
-  ]
 
-  const volByType = {}
+  class YearlyPermitVol extends React.Component {
+    constructor(props) {
+      super(props);
 
-  volumeKeys.forEach(volKey => {
-    volByType[volKey] = {}
-    permitVol.forEach(d => {
-      const splitDate = d['Month & Year'].split(' ')
-      const month = splitDate[0];
-      const year = d['Month & Year'].split(' ')[1]
-      let value = d[`${volKey} Construction Value`].replace(/\D/g, '')
-      if (value === "") { value = 0; }
+      this.months = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December'
+      ]
+      this.volDataByType = this.volByType(this.props.permitData)
+      this.radiusFunc = this.getRadiusFunc()
 
-      if (!volByType[volKey][year]) {
-        volByType[volKey][year] = []
+      this.state = {
+        hover: null,
+        activeTypes: ['Total'],
+        activeYears: ['2017', '2018'],
       }
+    }
 
-      volByType[volKey][year].push({
-        volume: d[volKey],
-        monthName: month,
-        monthInt: months.findIndex(m => m === month),
-        value: value,
+    volByType(){
+      const returnData = {}
+
+      this.props.volumeKeys.forEach((volKey, i) => {
+        returnData[volKey] = {}
+        this.props.permitData.forEach(d => {
+          const splitDate = d['Month & Year'].split(' ')
+          const month = splitDate[0];
+          const year = d['Month & Year'].split(' ')[1]
+          let value = d[`${volKey} Construction Value`].replace(/\D/g, '')
+          if (value === "") { value = 0; }
+
+          if (!returnData[volKey][year]) {
+            returnData[volKey][year] = []
+          }
+
+          returnData[volKey][year].push({
+            volume: d[volKey],
+            monthInt: this.months.findIndex(m => m === month),
+            value: value,
+            color: this.props.colorScheme[i],
+          })
+        })
       })
-    })
-  })
 
-  const yearsCovered = Object.keys(volByType[volumeKeys[0]])
+      return returnData;
+    }
 
-  const sortedValues = [].concat.apply(
-    [],
-    [].concat.apply(
-      [],
-      [].concat.apply([], Object.values(volByType)).map(d => Object.values(d))
-    )
-  ).map(d => d.value)
-    .sort((a, b) => a - b)
+    getRadiusFunc() {
+      const sortedValues = [].concat.apply(
+        [],
+        [].concat.apply(
+          [],
+          [].concat.apply([], Object.values(this.volDataByType)).map(d => Object.values(d))
+        )
+      ).map(d => d.value)
+        .sort((a, b) => a - b)
 
-  const radiusFunc = d3.scaleLinear()
-    .range([2, 20])
-    .domain([sortedValues[0], +sortedValues[sortedValues.length - 1]])
+      return d3.scaleLinear()
+        .range([2, 20])
+        .domain([sortedValues[0], +sortedValues[sortedValues.length - 1]])
+    }
 
+    render() {
+      const currentLines = []
 
-  // THIS IS SILLY FOR NOW BUT WILL MAKE SENSE
-  // LATER, MAKE TIMELINES AND SUCH
-  const activeTypes = volumeKeys;
-  const activeYears = ['2015', '2016', '2017', '2018'];
-
-  const currentLines = []
-
-  activeTypes.forEach(type => {
-    activeYears.forEach(year => {
-      currentLines.push({
-        type,
-        year,
-        coordinates: volByType[type][year],
+      this.state.activeTypes.forEach(type => {
+        this.state.activeYears.forEach(year => {
+          currentLines.push({
+            type,
+            year,
+            coordinates: this.volDataByType[type][year],
+          })
+        })
       })
-    })
-  })
+
+      return (<div style={{ width: '99%', height: '90%', textAlign: 'center' }}>
+        <Semiotic.ResponsiveXYFrame
+          responsiveWidth
+          responsiveHeight
+          margin={{ top: 70, left: 40, right: 40, bottom: 70}}
+          lines={currentLines}
+          lineType={ 'line' }
+          xAccessor={d => d.monthInt}
+          yAccessor="volume"
+          axes={[
+            {
+              orient: 'bottom',
+              ticks: 12,
+              tickFormat: d => this.months[d]
+            }
+          ]}
+          lineStyle={d => {
+            return {
+              stroke: d.coordinates[0].color,
+              strokeWidth: '0.5',
+            }
+          }}
+          showLinePoints
+          customPointMark={(d) => {
+            return <circle
+              r={this.radiusFunc(d.d.value)}
+            />
+          }}
+          pointStyle={d => ({
+            stroke: d.color,
+            strokeWidth: 2,
+            fill: 'none',
+          })}
+          hoverAnnotation={[
+            {
+              type: 'x',
+              color: 'gray',
+              disable: ['connector', 'note'],
+              className: 'semiotic-yHoverLine',
+            },
+            { type: 'frame-hover' },
+          ]}
+          svgAnnotationRules={d => {
+            if (d.d.type === 'x') { return null; }
+            console.log(d)
+          }}
+          tooltipContent={d => {
+            // todo: use tooltip object; add volume and value
+            return `${d.parentLine.year} ${d.parentLine.type}: ${d.volume}`
+          }}
+        />
+      </div>)
+
+    }
+  }
+
+
+
+
 
   const container = document.body.appendChild(document.createElement('div'));
   container.className += 'parent'
 
-
-  // TODO: COLOR, HOVER BEHAVIOR
-
   ReactDOM.render(
-    <div style={{ width: '99%', height: '90%', textAlign: 'center' }}>
-      <Semiotic.ResponsiveXYFrame
-        responsiveWidth
-        responsiveHeight
-        margin={{ top: 70, left: 40, right: 40, bottom: 70}}
-        lines={currentLines}
-        lineType={ 'line' }
-        xAccessor="monthInt"
-        yAccessor="volume"
-        axes={[
-          {
-            orient: 'bottom',
-            ticks: 12,
-            tickFormat: d => months[d]
-          }
-        ]}
-        lineStyle={{
-          stroke: 'black',
-          strokeWidth: '0.5',
-          strokeOpacity: 0.35,
-        }}
-        showLinePoints
-        customPointMark={(d) => {
-          return <circle
-            r={radiusFunc(d.d.value)}
-          />
-        }}
-        pointStyle={d => ({
-          stroke: 'pink',
-          strokeWidth: 1,
-          fill: 'pink',
-        })}
-        hoverAnnotation
-        tooltipContent={d => {
-          return `${d.parentLine.year} ${d.parentLine.type}: ${d.volume}`
-        }
-        }
-      />
-    </div>,
+    <YearlyPermitVol
+      permitData={permitVol}
+      colorScheme={['#B66DFF', '#DB6D00', '#006DDB', '#000000', '#FF6DB6', '#920000', '#01b0b0', '#2fe12f', '#004949', '#6DB6FF', '#490092']}
+      volumeKeys={[
+        'Single Family',
+        'Multi Family',
+        'Town Houses',
+        'Duplexes',
+        'Commercial',
+        'Residential Alterations and Additions',
+        'Commercial Alterations and Additions',
+        'Mobile Homes',
+        'Total',
+      ]}
+    />,
     container
   );
   </script>
