@@ -121,8 +121,19 @@
       return returnData;
     }
 
+    maxVolume() {
+      const sortedValue = [].concat.apply(
+        [],
+        [].concat.apply(
+          [],
+          [].concat.apply([], Object.values(this.volDataByType)).map(d => Object.values(d))
+        )
+      ).map(d => d.volume)
+        .sort((a, b) => b - a)[0]
+    }
+
     getRadiusFunc() {
-      const sortedValues = [].concat.apply(
+      const sortedValue = [].concat.apply(
         [],
         [].concat.apply(
           [],
@@ -133,7 +144,7 @@
 
       return d3.scaleLinear()
         .range([2, 20])
-        .domain([sortedValues[0], +sortedValues[sortedValues.length - 1]])
+        .domain([sortedValue[0], +sortedValue[sortedValue.length - 1]])
     }
 
     render() {
@@ -148,8 +159,6 @@
           })
         })
       })
-
-      console.log(this.years)
 
       return (<div style={{ width: '100%', height: '90vh', textAlign: 'center' }}>
         <div className="buttonContainer">
@@ -196,6 +205,7 @@
           lineType={ 'line' }
           xAccessor={d => d.monthInt}
           yAccessor="volume"
+          yExtent={[0, this.maxVolume()]}
           axes={[
             {
               orient: 'bottom',
@@ -231,7 +241,7 @@
           ]}
           svgAnnotationRules={d => {
             if (d.d.type === 'x') { return null; }
-            console.log(d)
+            // console.log(d)
           }}
           tooltipContent={d => {
             // todo: use tooltip object; add volume and value
